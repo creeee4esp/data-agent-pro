@@ -1,0 +1,55 @@
+# M0 最小链路配置：小规模，用于打通端到端流程
+seed: 42
+database: enterprise_dw
+# 重建目标库（会 DROP DATABASE enterprise_dw，仅限本数据集专用库）
+recreate: true
+
+db:
+  host: 127.0.0.1
+  port: 3306
+  user: root
+  password: root          # 可用环境变量 DATASET_DB_PASSWORD 覆盖
+
+out_dir: out
+
+# 核心业务表（评测题标准答案只引用这些表及派生层）
+core_tables: [user_info, item_category, item_sku, trade_order, trade_order_item]
+
+scale:
+  users: 2000
+  skus: 300
+  orders: 20000
+  year: 2025              # 订单所在年份
+
+# 有意注入的脏数据（校验时单独统计，不算违例）
+anomalies:
+  user_city_null_ratio: 0.01
+  negative_stock_skus: 2
+
+layers:
+  ods_tables: [user_info, item_category, item_sku, trade_order, trade_order_item]
+  etl_date: "2026-01-01"
+  sql_files: [ddl/layers/trade_m0.sql]
+
+noise:
+  source_tables: [user_info, item_sku, trade_order, trade_order_item]
+  backup_ratio: 0.75       # 生成 {t}_bak 的概率
+  dated_backups_max: 2     # 每表 0~N 张 {t}_bak_YYYYMMDD
+  tmp_ratio: 0.5
+  old_version_ratio: 0.5   # {t}_v1 / {t}_old，少若干列
+  test_ratio: 0.5          # test_{t}，空表
+  personal_copies: 3       # u_{name}_{t}_analysis
+  copy_rows: 100
+  monthly_shards:          # 按月分表，每张取部分数据
+    trade_order: order_time
+  shard_rows: 300
+
+degrade:
+  # 按表分组设置比例：core / derived(ods_,dwd_,dws_,ads_,dim_) / noise
+  drop_table_comment: {core: 0.2, derived: 0.4, noise: 0.9}
+  drop_column_comment: {core: 0.3, derived: 0.6, noise: 0.9}
+  drop_core_fk: 0.5
+  wrong_comment: 0.03      # 金额列注释误标"单位：分"
+  abbreviate_column: 0.3   # 仅作用于 noise 表（见 ADR-005）
+
+questions: [questions/m0.jsonl]

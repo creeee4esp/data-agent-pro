@@ -1,0 +1,22 @@
+DataAgent ProMax
+Copyright 2026 the DataAgent ProMax authors
+
+This product is a modified derivative work of Spring AI Alibaba DataAgent
+(https://github.com/spring-ai-alibaba/DataAgent),
+Copyright 2024-2026 the original author or authors,
+licensed under the Apache License, Version 2.0.
+
+The original project and this derivative work are distributed under the
+Apache License, Version 2.0. See the LICENSE file for the full license text.
+
+Modifications made in this repository include, but are not limited to:
+
+  - 企业数仓合成数据集生成器，以及 Schema 召回 / 知识检索 / 端到端执行评测体系
+  - Agentic Schema Linking：表家族分组、列级热启动、LLM 工具补全、只增不删合并
+  - 表关系图构建、Steiner JOIN 路径补全与 JOIN 提示
+  - 知识父子分块、向量 + BM25 混合检索与可选 cross-encoder 精排
+  - Elasticsearch 向量库扩展、确定性检索与批量写入
+  - 上游实现中的若干缺陷修复（表数量截断、排序不确定、响应截断、max_tokens 等）
+
+Original source files retain their original copyright notices. New files added
+in this repository are provided under the same Apache License, Version 2.0.

@@ -1,0 +1,22 @@
+# S2 small：约 100 张表
+extends: s2-base.yaml
+database: enterprise_dw_s
+out_dir: out/s2-small
+layers:
+  rules:
+    periods: [1d]
+    dws:
+      trade: [user, cate1, prov]
+      pay: [channel]
+      refund: [reason]
+      ship: [warehouse]
+      visit: [cate1]
+noise:
+  source_prefixes: []
+  backup_ratio: 0.5
+  dated_backups_max: 1
+  tmp_ratio: 0.3
+  old_version_ratio: 0.3
+  test_ratio: 0.3
+  personal_copies: 5
+  monthly_shards: {trade_order: order_time}

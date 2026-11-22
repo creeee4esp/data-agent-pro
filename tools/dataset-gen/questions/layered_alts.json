@@ -1,0 +1,110 @@
+{
+ "_comment": "数仓分层表上的替代写法：S3 T3 评测中大模型选用分层表（dim/dwd/dws/ads）作答，逐题写出对应 SQL，在 small/medium/large 三档上与 gold_sql 执行结果一致后收录（2026-10-19）。由 build_s2.py 合并进各题的 alt_sqls。",
+ "alts": {
+  "m0-002": [
+   "SELECT COUNT(*) AS cnt FROM dim_user WHERE province = '浙江省'"
+  ],
+  "m0-003": [
+   "SELECT gmv FROM ads_trade_gmv_monthly WHERE stat_month = '2025-06'"
+  ],
+  "m0-004": [
+   "SELECT category1_name, SUM(sales_amount) AS sales FROM ads_trade_cate1_sales_monthly WHERE stat_month BETWEEN '2025-01' AND '2025-12' GROUP BY category1_name ORDER BY sales DESC"
+  ],
+  "m0-006": [
+   "SELECT member_level, COUNT(DISTINCT buyer_id) AS user_cnt FROM dwd_trade_order_detail_di WHERE category2_name = '手机' AND is_paid = 1 AND order_date BETWEEN '2025-01-01' AND '2025-12-31' GROUP BY member_level ORDER BY member_level"
+  ],
+  "m0-007": [
+   "SELECT stat_date AS d, SUM(order_cnt) AS cnt FROM dws_trade_user_order_1d WHERE stat_date BETWEEN '2025-12-01' AND '2025-12-31' GROUP BY stat_date ORDER BY d"
+  ],
+  "m0-008": [
+   "SELECT ROUND(repurchase_rate * 100, 2) FROM ads_user_repurchase_yearly WHERE stat_year = 2025"
+  ],
+  "m0-010": [
+   "SELECT sku_id, sku_name, SUM(qty) AS total_qty FROM dwd_trade_order_detail_di WHERE is_paid = 1 AND order_date = '2025-11-11' GROUP BY sku_id, sku_name ORDER BY total_qty DESC, sku_id LIMIT 10"
+  ],
+  "s2-003": [
+   "SELECT ROUND(SUM(pay_amt) / SUM(pay_cnt), 2) FROM ads_pay_channel_monthly WHERE pay_channel = 'card' AND stat_month BETWEEN '2025-01' AND '2025-12'"
+  ],
+  "s2-005": [
+   "SELECT stat_date AS d, SUM(pay_amt) FROM dws_trade_channel_pay_1d WHERE stat_date BETWEEN '2025-12-25' AND '2025-12-31' GROUP BY stat_date ORDER BY d"
+  ],
+  "s2-007": [
+   "SELECT COUNT(*) FROM dwd_trade_refund_di WHERE refund_reason = 'quality'"
+  ],
+  "s2-009": [
+   "SELECT u.user_name, r.refund_amount FROM pay_refund r JOIN trade_order o ON o.order_id = r.order_id JOIN dim_user u ON u.user_id = o.buyer_id ORDER BY r.refund_amount DESC, r.order_id LIMIT 5"
+  ],
+  "s2-010": [
+   "SELECT receiver_province, COUNT(*) AS cnt FROM dwd_trade_refund_di GROUP BY receiver_province ORDER BY cnt DESC, receiver_province LIMIT 1"
+  ],
+  "s2-013": [
+   "SELECT SUM(ship_cnt) FROM dws_lgs_warehouse_ship_1d WHERE warehouse_region = '华东'"
+  ],
+  "s2-016": [
+   "SELECT w.warehouse_name, SUM(d.ship_cnt) AS cnt FROM dws_lgs_warehouse_ship_1d d JOIN lgs_warehouse w ON w.warehouse_id = d.warehouse_id GROUP BY w.warehouse_name ORDER BY cnt DESC, w.warehouse_name"
+  ],
+  "s2-018": [
+   "SELECT ROUND(AVG(TIMESTAMPDIFF(HOUR, p.pay_time, s.ship_time)), 2) FROM lgs_shipment s JOIN pay_order p ON p.order_id = s.ord_no"
+  ],
+  "s2-022": [
+   "SELECT brand_name, ROUND(SUM(rating >= 4) / COUNT(*), 4) AS rate FROM dwd_item_review_di GROUP BY brand_name HAVING COUNT(*) >= 100 ORDER BY rate DESC, brand_name LIMIT 1"
+  ],
+  "s2-024": [
+   "SELECT d.sku_name, COUNT(*) AS cnt, ROUND(AVG(r.rating), 2) FROM item_review r JOIN dim_sku d ON d.sku_id = r.sku_id GROUP BY d.sku_id, d.sku_name ORDER BY cnt DESC, d.sku_id LIMIT 1"
+  ],
+  "s2-026": [
+   "SELECT d.category2_name, COUNT(*) AS cnt FROM aftersale_order a JOIN trade_order_item i ON i.id = a.order_item_id JOIN dim_sku d ON d.sku_id = i.sku_id WHERE a.status = 'rejected' GROUP BY d.category2_name ORDER BY cnt DESC, d.category2_name LIMIT 1"
+  ],
+  "s2-030": [
+   "SELECT COUNT(DISTINCT visitor_id) FROM dwd_traffic_visit_di WHERE channel = 'mini_program' AND visit_date BETWEEN '2025-01-01' AND '2025-12-31'"
+  ],
+  "s2-031": [
+   "SELECT ROUND((SELECT COUNT(DISTINCT buyer_id) FROM dws_trade_user_order_1d WHERE stat_date BETWEEN '2025-01-01' AND '2025-12-31' AND order_cnt > 0) / (SELECT COUNT(DISTINCT visitor_id) FROM dws_traffic_visitor_visit_1d WHERE stat_date BETWEEN '2025-01-01' AND '2025-12-31'), 4)"
+  ],
+  "s2-032": [
+   "SELECT d.sku_name, COUNT(*) AS pv FROM dwd_traffic_visit_di v JOIN dim_sku d ON d.sku_id = v.sku_id GROUP BY d.sku_id, d.sku_name ORDER BY pv DESC, d.sku_id LIMIT 10"
+  ],
+  "s2-033": [
+   "SELECT channel, ROUND(AVG(stay_seconds), 1) AS s FROM dwd_traffic_visit_di GROUP BY channel ORDER BY s DESC, channel LIMIT 1"
+  ],
+  "s2-035": [
+   "SELECT ROUND(COUNT(*) / COUNT(DISTINCT visitor_id), 2) FROM dwd_traffic_visit_di"
+  ],
+  "s2-036": [
+   "SELECT c.coupon_type, ROUND(SUM(r.use_status = 'used') / COUNT(*), 4) FROM mkt_coupon_receive r JOIN dim_coupon c ON c.coupon_id = r.coupon_id GROUP BY c.coupon_type ORDER BY c.coupon_type"
+  ],
+  "s2-039": [
+   "SELECT SUM(used_cnt) FROM ads_coupon_usage_monthly WHERE coupon_type = 'full_reduction'"
+  ],
+  "s2-044": [
+   "SELECT COUNT(*) FROM dim_user WHERE register_date BETWEEN '2025-01-01' AND '2025-12-31'"
+  ],
+  "s2-045": [
+   "SELECT DATE_FORMAT(register_date, '%Y-%m') AS m, COUNT(*) FROM dim_user WHERE register_date BETWEEN '2025-01-01' AND '2025-12-31' GROUP BY m ORDER BY m"
+  ],
+  "s2-048": [
+   "SELECT SUM(o.item_amount) FROM dwd_trade_order_detail_di o JOIN dim_sku d ON d.sku_id = o.sku_id WHERE d.brand_level = 'S' AND o.is_paid = 1 AND o.order_date BETWEEN '2025-01-01' AND '2025-12-31'",
+   "SELECT SUM(o.paid_amount) FROM dws_trade_brand_order_1m o JOIN item_brand b ON b.brand_name = o.brand_name WHERE b.brand_level = 'S' AND o.stat_date BETWEEN '2025-01-01' AND '2025-12-31'"
+  ],
+  "s2-049": [
+   "SELECT COUNT(*) FROM dim_sku d JOIN item_brand b ON b.brand_id = d.brand_id WHERE b.origin_country = '日本' AND d.sku_status = 'on_sale'"
+  ],
+  "s2-051": [
+   "SELECT member_level, SUM(paid_amount) FROM dws_trade_level_order_1m WHERE stat_date BETWEEN '2025-01-01' AND '2025-12-31' GROUP BY member_level ORDER BY member_level"
+  ],
+  "s2-052": [
+   "SELECT SUM(item_amount) FROM dwd_trade_order_detail_di WHERE is_paid = 1 AND order_date BETWEEN '2025-04-01' AND '2025-06-30'"
+  ],
+  "s2-055": [
+   "SELECT ROUND(SUM(CASE WHEN DAYOFWEEK(stat_date) IN (1, 7) THEN order_cnt ELSE 0 END) / SUM(order_cnt) * 100, 2) FROM dws_trade_user_order_1d WHERE stat_date BETWEEN '2025-01-01' AND '2025-12-31'"
+  ],
+  "s2-056": [
+   "SELECT SUM(i.item_amount) FROM trade_order o JOIN trade_order_item i ON i.order_id = o.order_id JOIN dim_user u ON u.user_id = o.buyer_id WHERE o.pay_time IS NOT NULL AND o.order_time >= '2025-01-01' AND o.order_time < '2026-01-01' AND u.register_date BETWEEN '2025-01-01' AND '2025-12-31'",
+   "SELECT SUM(o.item_amount) FROM dwd_trade_order_detail_di o JOIN dim_user u ON u.user_id = o.buyer_id WHERE o.is_paid = 1 AND o.order_date BETWEEN '2025-01-01' AND '2025-12-31' AND u.register_date BETWEEN '2025-01-01' AND '2025-12-31'"
+  ],
+  "s2-059": [
+   "SELECT z.member_level, ROUND(SUM(t.cnt >= 2) / COUNT(*) * 100, 2) FROM (SELECT buyer_id, SUM(paid_order_cnt) AS cnt FROM dws_trade_user_order_1d WHERE stat_date BETWEEN '2025-01-01' AND '2025-12-31' GROUP BY buyer_id HAVING cnt > 0) t JOIN dim_user_zip z ON z.user_id = t.buyer_id AND z.end_date = '9999-12-31' GROUP BY z.member_level ORDER BY z.member_level",
+   "SELECT z.member_level, ROUND(SUM(t.cnt >= 2) / COUNT(*) * 100, 2) FROM (SELECT buyer_id, SUM(pay_cnt) AS cnt FROM dws_trade_user_pay_1m WHERE stat_date BETWEEN '2025-01-01' AND '2025-12-31' GROUP BY buyer_id HAVING cnt > 0) t JOIN dim_user_zip z ON z.user_id = t.buyer_id AND z.end_date = '9999-12-31' GROUP BY z.member_level ORDER BY z.member_level"
+  ]
+ }
+}

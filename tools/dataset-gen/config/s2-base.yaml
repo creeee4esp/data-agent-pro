@@ -1,0 +1,54 @@
+# S2 三个档位共享的基础配置：核心表、核心数据、退化规则、题集完全相同（控制变量）
+# 档位文件用 extends 引用本文件，只覆盖 database / out_dir / layers.rules / noise
+seed: 42
+recreate: true
+
+db:
+  host: 127.0.0.1
+  port: 3306
+  user: root
+  password: root          # 可用环境变量 DATASET_DB_PASSWORD 覆盖
+
+# 16 张核心表：M0 的 5 张 + core_s2.sql 的 11 张
+core_tables: [user_info, item_category, item_sku, trade_order, trade_order_item,
+              user_address, item_brand, mkt_coupon, mkt_coupon_receive, pay_order, pay_refund,
+              lgs_warehouse, lgs_shipment, aftersale_order, item_review, log_visit]
+
+# 与 M0 相同的核心规模和种子：M0 的 5 张表在 S2 各档中数据完全一致
+scale:
+  users: 2000
+  skus: 300
+  orders: 20000
+  year: 2025
+
+anomalies:
+  user_city_null_ratio: 0.01
+  negative_stock_skus: 2
+
+core_ext:
+  extra_visits: 60000     # 没有下单的浏览记录条数
+
+layers:
+  ods_tables: [user_info, item_category, item_sku, trade_order, trade_order_item,
+               user_address, item_brand, mkt_coupon, mkt_coupon_receive, pay_order, pay_refund,
+               lgs_warehouse, lgs_shipment, aftersale_order, item_review, log_visit]
+  etl_date: "2026-01-01"
+  sql_files: [ddl/layers/trade_m0.sql]
+
+noise:
+  version: 2
+  parallelism: 6
+  copy_rows: 100
+  shard_rows: 300
+  daily_shard_rows: 50
+  shard_years: [2025]
+
+degrade:
+  drop_table_comment: {core: 0.2, derived: 0.4, noise: 0.9}
+  drop_column_comment: {core: 0.3, derived: 0.6, noise: 0.9}
+  drop_core_fk: 0.5
+  wrong_comment: 0.03
+  abbreviate_column: 0.3
+  per_table_rng: true     # 每张表独立随机，保证三档核心表退化结果一致
+
+questions: [questions/s2.jsonl]

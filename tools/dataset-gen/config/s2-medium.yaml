@@ -1,0 +1,24 @@
+# S2 medium：约 500 张表
+extends: s2-base.yaml
+database: enterprise_dw_m
+out_dir: out/s2-medium
+layers:
+  rules:
+    periods: [1d, 1m]
+    dws:
+      trade: [user, sku, cate1, cate2, brand, prov, level]
+      pay: [user, prov, channel]
+      refund: [user, prov, reason]
+      ship: [warehouse, carrier, prov]
+      review: [sku, cate1, brand]
+      visit: [visitor, sku, cate1, vchannel]
+noise:
+  source_prefixes: [dwd_, dws_, ads_, dim_]
+  backup_ratio: 0.75
+  dated_backups_max: 3
+  tmp_ratio: 0.5
+  old_version_ratio: 0.5
+  test_ratio: 0.5
+  personal_copies: 40
+  shard_years: [2024, 2025]
+  monthly_shards: {trade_order: order_time, pay_order: pay_time, log_visit: visit_time, lgs_shipment: ship_time}

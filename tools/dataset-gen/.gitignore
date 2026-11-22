@@ -1,0 +1,5 @@
+out/
+__pycache__/
+.llm-cache/
+knowledge/work/
+knowledge/failures.jsonl

@@ -1,0 +1,151 @@
+# 人工整理的"主题清单"：每条只说明要写什么、涉及哪些表，正文全部由大模型按事实撰写。
+# 能从元数据自动展开的主题（DWS 家族、ADS 报表、噪声类型、枚举值等）不在这里，见 jobs.py。
+
+qa:
+  # 只能从明细算的指标（没有现成汇总表，或汇总表不能直接加）
+  detail_metrics:
+    - {topic: "任意日期区间的复购率（区间内支付订单数≥2的买家占比）", tables: [ods_trade_order_di, trade_order]}
+    - {topic: "按一级品类统计的退款率（退款订单数 / 支付订单数）", tables: [dwd_trade_order_detail_di]}
+    - {topic: "领券用户与未领券用户的客单价对比", tables: [mkt_coupon_receive, trade_order, pay_order]}
+    - {topic: "新客（当年首单）与老客的 GMV 拆分", tables: [dwd_trade_order_detail_di]}
+    - {topic: "按年龄段统计的支付买家数与人均支付金额", tables: [dim_user, dwd_trade_pay_di]}
+    - {topic: "按大区统计的平均配送时长（只算已签收）", tables: [dwd_lgs_shipment_di]}
+    - {topic: "带图评价与不带图评价的平均评分对比", tables: [item_review]}
+    - {topic: "按售后类型统计的售后单数与驳回率", tables: [aftersale_order]}
+    - {topic: "商品访问到下单的转化率（按 SKU，访问用户中下单用户的占比）", tables: [dwd_traffic_visit_di, dwd_trade_order_detail_di]}
+    - {topic: "下单后未支付的订单占比（按月）", tables: [trade_order]}
+    - {topic: "各支付渠道的退款金额占支付金额的比例", tables: [dwd_trade_pay_di, dwd_trade_refund_di]}
+    - {topic: "品牌等级（S/A/B）维度的销售额与件单价", tables: [dim_sku, dwd_trade_order_detail_di]}
+    - {topic: "各优惠券类型的核销后订单实付金额", tables: [mkt_coupon_receive, mkt_coupon, pay_order]}
+    - {topic: "按承运商统计的签收率（已签收单数 / 发货单数）", tables: [dwd_lgs_shipment_di]}
+    - {topic: "首单到第二单的平均间隔天数", tables: [trade_order]}
+    - {topic: "一级品类的平均停留时长（总停留秒数 / 浏览量）", tables: [dws_traffic_cate1_visit_1d]}
+    - {topic: "会员等级 × 一级品类的交叉销售额", tables: [dwd_trade_order_detail_di]}
+    - {topic: "按发货仓库所在大区与收货省份是否同区的配送时长对比", tables: [dwd_lgs_shipment_di, dim_region]}
+    - {topic: "评分 1～2 星的差评集中在哪些品牌", tables: [dwd_item_review_di]}
+    - {topic: "有多个收货地址的用户与只有一个地址的用户的下单频次对比", tables: [dim_user, dws_trade_user_order_1d]}
+
+  # 多表关联路径（由外键组合出的、有业务意义的路径）
+  join_paths:
+    - {topic: "订单 → 订单明细 → SKU → 二级品类 → 一级品类", tables: [trade_order, trade_order_item, item_sku, item_category]}
+    - {topic: "订单明细 → SKU → 品牌（品牌只能按名称关联）", tables: [trade_order_item, item_sku, item_brand]}
+    - {topic: "订单 → 支付单", tables: [trade_order, pay_order]}
+    - {topic: "订单 → 退款单", tables: [trade_order, pay_refund]}
+    - {topic: "订单明细 → 售后单", tables: [trade_order_item, aftersale_order]}
+    - {topic: "订单 → 物流单 → 仓库", tables: [trade_order, lgs_shipment, lgs_warehouse]}
+    - {topic: "订单 → 买家 → 收货地址", tables: [trade_order, user_info, user_address]}
+    - {topic: "优惠券领取 → 优惠券 → 使用的订单", tables: [mkt_coupon_receive, mkt_coupon, trade_order]}
+    - {topic: "评价 → SKU → 品类", tables: [item_review, item_sku, item_category]}
+    - {topic: "访问日志 → SKU → 品类", tables: [log_visit, item_sku, item_category]}
+    - {topic: "访问日志 → 用户 → 会员等级", tables: [log_visit, user_info]}
+    - {topic: "DWD 订单明细宽表直接替代订单、明细、SKU、品类的四表关联", tables: [dwd_trade_order_detail_di]}
+    - {topic: "DWD 支付明细带出收货省份，避免再关联订单", tables: [dwd_trade_pay_di]}
+    - {topic: "DWD 物流明细带出仓库大区与时效，避免再关联仓库", tables: [dwd_lgs_shipment_di]}
+    - {topic: "维表 dim_sku 一次拿到品牌等级与两级品类", tables: [dim_sku]}
+    - {topic: "维表 dim_user 的大区与年龄段", tables: [dim_user]}
+    - {topic: "拉链表 dim_user_zip 取某一天的会员等级", tables: [dim_user_zip]}
+    - {topic: "评价与订单明细按用户和 SKU 关联，分析买后评价率", tables: [item_review, trade_order_item, trade_order]}
+
+  # 易错点（每条一个坑）
+  pitfalls:
+    - {topic: "UV 不能把每天的 uv 相加得到月 UV", tables: [dws_traffic_vchannel_visit_1d, dws_traffic_vchannel_visit_1m]}
+    - {topic: "平均评分不能对 avg_rating 再求平均，要按评价数加权", tables: [dws_item_cate1_review_1d]}
+    - {topic: "平均发货时长不能跨天直接平均", tables: [dws_lgs_warehouse_ship_1d]}
+    - {topic: "已支付要看 pay_time 不为空，不能只看 order_status = 'paid'", tables: [trade_order]}
+    - {topic: "GMV 包含后来退款的订单，不要扣除退款", tables: [ads_trade_gmv_monthly, dwd_trade_order_detail_di]}
+    - {topic: "下单数 order_cnt 在 SKU / 品类粒度上不能相加得到总订单数", tables: [dws_trade_sku_order_1d, dws_trade_cate1_order_1d]}
+    - {topic: "不要使用按月 / 按日分表和备份表，统一用正表", tables: [trade_order]}
+    - {topic: "周表的 stat_date 是周一的日期，按自然月统计不能直接用周表", tables: [dws_trade_prov_order_1w]}
+    - {topic: "退款率月报按下单月统计，不是按退款月", tables: [ads_trade_refund_rate_monthly]}
+    - {topic: "优惠券核销率按领取月统计", tables: [ads_coupon_usage_monthly]}
+    - {topic: "订单表的金额字段与明细金额之和的关系（运费、优惠）", tables: [trade_order, trade_order_item]}
+    - {topic: "品牌在 SKU 表里是名称，不是 ID", tables: [item_sku, item_brand]}
+
+faq:
+  confusing_metrics:
+    - "GMV、销售额 sales_amount、已支付明细金额 paid_amount、支付金额 pay_amt 的区别"
+    - "下单数 order_cnt、支付订单数 paid_order_cnt、支付笔数 pay_cnt 的区别"
+    - "发货单数 ship_cnt 与已签收单数 signed_cnt 的区别"
+    - "退款笔数 refund_cnt 与退款订单数 refund_order_cnt 的区别"
+    - "好评数 good_cnt、好评率 good_rate 与平均评分 avg_rating 的关系"
+    - "浏览量 pv 与访客数 uv 的区别"
+    - "支付买家数 paid_buyer_cnt 与下单用户数 buyer_cnt 的区别"
+    - "复购率 repurchase_rate 的统计周期与分母"
+    - "转化率 conversion_rate 的分子分母"
+    - "核销率 use_rate 与使用数 used_cnt"
+    - "平均发货时长 avg_ship_hours 与平均配送时长 avg_deliver_hours"
+    - "购买件数 item_qty 与下单数 order_cnt"
+    - "退款金额 refund_amount 与售后单的关系"
+    - "成交单价 unit_price 与商品当前售价 price"
+    - "会员等级 member_level 在订单宽表和用户维表里的区别"
+  aggregation_rules:
+    - "去重计数类指标（uv、order_cnt、买家数）能否跨天、跨维度相加"
+    - "平均值类指标（avg_rating、avg_ship_hours）如何从日表汇总到月"
+    - "比率类指标（refund_rate、conversion_rate、good_rate）如何汇总"
+    - "可加和指标（金额、件数、笔数）在 DWS 各粒度之间的关系"
+    - "日 / 周 / 月表之间的换算关系"
+    - "ADS 报表与 DWS 汇总的数字为什么一致"
+  time_semantics:
+    - "下单类 DWS 的 stat_date 指的是哪一天"
+    - "支付类 DWS 的 stat_date 指的是哪一天"
+    - "退款类 DWS 的 stat_date 指的是哪一天"
+    - "物流类 DWS 的 stat_date 指的是哪一天"
+    - "周表的一周如何定义"
+    - "月表 stat_date 与 ADS 的 stat_month 格式区别"
+    - "分区日期 dt 与业务日期的区别"
+    - "退款率、核销率等报表按哪个月份归属"
+  data_boundaries:
+    - "核心业务数据覆盖的时间范围"
+    - "月分表与日分表覆盖的时间范围"
+    - "DWS / ADS 每天什么时候产出、有多少延迟"
+    - "访问日志只记录商品详情页访问"
+    - "退款数据只包含已完成的退款"
+    - "售后单与退款单不是一一对应"
+    - "部分表和字段注释缺失或命名不一致"
+    - "备份表、副本表的列名可能与正表不同"
+    - "用户会员等级拉链表目前每人只有一段"
+    - "数据中的收货省份范围"
+  capability_boundaries:
+    - "能否计算利润、毛利（没有成本数据）"
+    - "能否查询库存（没有库存表）"
+    - "能否分析搜索词、加购（没有对应日志）"
+    - "能否按小时分析（DWS 最细到天）"
+    - "能否分析商家或店铺（单店铺数据）"
+    - "能否分析广告投放效果（没有投放数据）"
+    - "能否查询用户手机号等敏感信息"
+    - "能否预测未来销量"
+
+business_terms:
+  - {term: "已支付订单", hint: "pay_time 不为空的订单，含后续退款"}
+  - {term: "大区", hint: "省份到华东、华南等大区的映射，见 dim_region"}
+  - {term: "会员等级", hint: "1-普通到 5-钻石"}
+  - {term: "一级品类", hint: "item_category 中 cate_level = 1"}
+  - {term: "二级品类", hint: "item_category 中 cate_level = 2，SKU 挂在二级品类上"}
+  - {term: "品牌等级", hint: "S、A、B"}
+  - {term: "支付渠道", hint: "alipay、wechat、card、unionpay"}
+  - {term: "承运商", hint: "sf、jd、yto、zto"}
+  - {term: "签收", hint: "物流单有 sign_time"}
+  - {term: "核销", hint: "优惠券领取记录 use_status = used"}
+  - {term: "好评", hint: "4 星及以上"}
+  - {term: "访客", hint: "访问商品详情页的用户，去重"}
+  - {term: "售后单", hint: "退货、换货、维修"}
+  - {term: "退款原因", hint: "quality、wrong_item、no_longer_needed、late_delivery"}
+  - {term: "新客", hint: "当年首次支付的用户"}
+  - {term: "复购", hint: "统计周期内支付订单数≥2"}
+  - {term: "贴源层 ODS", hint: "业务表的每日同步，加 etl_time、dt"}
+  - {term: "明细层 DWD", hint: "清洗关联后的明细宽表"}
+  - {term: "汇总层 DWS", hint: "按事件 × 粒度 × 周期汇总"}
+  - {term: "报表层 ADS", hint: "面向报表的结果表"}
+  - {term: "维度层 DIM", hint: "商品、用户、区域、优惠券维表"}
+  - {term: "拉链表", hint: "dim_user_zip，start_date/end_date"}
+  - {term: "分表", hint: "按月 _yyyymm、按日 _yyyymmdd 的残缺副本，不用于统计"}
+
+manuals:
+  - {title: "数据仓库命名规范", chapters: [适用范围, 分层前缀, 表名结构, 统计周期后缀, 粒度与事件命名, 字段命名, 日期与分区字段, 指标字段命名, 噪声表命名与识别, 命名评审流程]}
+  - {title: "数据仓库分层规范", chapters: [分层总览, ODS 贴源层, DIM 维度层, DWD 明细层, DWS 汇总层, ADS 报表层, 跨层引用规则, 分层选表原则, 数据保留策略, 常见反模式]}
+  - {title: "指标开发规范", chapters: [指标分类, 原子指标, 派生指标, 计算规则的写法, 可加和与不可加和, 时间归属, 指标命名, 指标上线流程, 指标变更流程, 指标下线]}
+  - {title: "SQL 编写规范", chapters: [基本格式, 选表优先级, 关联写法, 去重计数, 比率与平均值, 日期处理, 空值处理, 性能注意, 禁止事项, 示例评审清单]}
+  - {title: "数据质量规范", chapters: [质量维度, 主键唯一, 非空检查, 分层对账, 波动监控, 时效监控, 告警分级, 事故处理流程, 质量报告, 责任划分]}
+  - {title: "数据权限与安全规范", chapters: [数据分级, 敏感字段, 权限申请, 个人副本表, 导出管理, 脱敏规则, 审计, 账号管理, 违规处理, 常见问题]}
+  - {title: "数据开发上线流程", chapters: [需求评审, 模型设计, 开发与自测, 代码评审, 数据验证, 调度配置, 上线发布, 回滚方案, 上线公告, 上线后观察]}
+  - {title: "临时表与个人副本管理办法", chapters: [适用对象, 命名要求, 创建审批, 使用范围, 生命周期, 定期清理, 备份表管理, 分表管理, 测试表管理, 违规处理]}
